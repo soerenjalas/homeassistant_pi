@@ -8,7 +8,8 @@
   <script type="module" src="app.js"></script>
 </head>
 <body>
-  <header><div><strong>π <span>Home Assistant</span></strong><small id="status">Verbinde …</small></div><div class="header-actions"><label class="sr-only" for="model">OpenAI-Modell auswählen</label><select id="model" disabled title="OpenAI-Abonnement: verfügbare Modelle; Nutzungslimits hängen vom Modell ab"><option>Lade Modelle …</option></select><button id="new" type="button">Neuer Chat</button></div></header>
+  <header><strong>π <span>Home Assistant</span></strong><small id="status">Verbinde …</small></header>
+  <button id="new" class="new-chat" type="button" title="Neuen Chat starten" aria-label="Neuen Chat starten"><span aria-hidden="true">+</span> Neu</button>
   <main>
     <section id="login" hidden>
       <h2>Mit OpenAI verbinden</h2>
@@ -24,7 +25,15 @@
   <footer>
     <div id="working" role="status" hidden><span class="spinner" aria-hidden="true"></span><span id="working-label">Pi arbeitet …</span></div>
     <p id="activity"></p>
-    <form id="composer"><label class="sr-only" for="prompt">Deine Frage zu Home Assistant</label><textarea id="prompt" rows="2" maxlength="20000" placeholder="Was möchtest du zuhause erledigen?" aria-describedby="composer-help"></textarea><div><button id="send" type="submit">Senden</button><button id="stop" type="button" hidden>Stoppen</button></div></form>
+    <form id="composer">
+      <label class="sr-only" for="prompt">Deine Frage zu Home Assistant</label>
+      <textarea id="prompt" rows="2" maxlength="20000" placeholder="Was möchtest du zuhause erledigen?" aria-describedby="composer-help"></textarea>
+      <div class="composer-toolbar">
+        <label class="sr-only" for="model">OpenAI-Modell auswählen</label>
+        <select id="model" disabled title="OpenAI-Abonnement: verfügbare Modelle; Nutzungslimits hängen vom Modell ab"><option>Lade Modelle …</option></select>
+        <div class="composer-actions"><button id="send" type="submit">Senden</button><button id="stop" type="button" hidden>Stoppen</button></div>
+      </div>
+    </form>
     <small id="composer-help">Enter: senden · Shift+Enter: neue Zeile · Änderungen nur mit Bestätigung</small>
   </footer>
 </body>

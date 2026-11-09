@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.4
+
+- Move the model picker into the fixed composer toolbar, keeping it accessible while scrolling.
+- Replace the header's New Chat button with a floating, labelled “+ Neu” control.
+
 ## 0.1.3
 
 - OpenAI subscription model selector in the chat header; choices persist per HA user without clearing the conversation.
