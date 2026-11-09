@@ -23,8 +23,8 @@
     <p id="activity" role="status"></p>
   </main>
   <footer>
-    <form id="composer"><label class="sr-only" for="prompt">Deine Frage zu Home Assistant</label><textarea id="prompt" rows="2" maxlength="20000" placeholder="Was möchtest du zuhause erledigen?"></textarea><div><button id="send" type="submit">Senden</button><button id="stop" type="button" hidden>Stoppen</button></div></form>
-    <small>Lesen ohne Rückfrage · Änderungen nur mit Bestätigung · Keine Shell</small>
+    <form id="composer"><label class="sr-only" for="prompt">Deine Frage zu Home Assistant</label><textarea id="prompt" rows="2" maxlength="20000" placeholder="Was möchtest du zuhause erledigen?" aria-describedby="composer-help"></textarea><div><button id="send" type="submit">Senden</button><button id="stop" type="button" hidden>Stoppen</button></div></form>
+    <small id="composer-help">Enter: senden · Shift+Enter: neue Zeile · Änderungen nur mit Bestätigung</small>
   </footer>
 </body>
 </html>

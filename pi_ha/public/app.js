@@ -1,3 +1,8 @@
+import { marked } from "./vendor/marked.js";
+import DOMPurify from "./vendor/purify.js";
+import { createMarkdownRenderer } from "./markdown.js";
+
+const renderMarkdown = createMarkdownRenderer(marked, DOMPurify);
 const $ = (id) => document.getElementById(id);
 let messagesKey = "", approvalsKey = "", sending = false;
 async function api(path, body) {
@@ -15,7 +20,11 @@ async function action(path, body = {}) {
 function message(role, text) {
   const article = document.createElement("article"); article.className = role;
   const label = document.createElement("small"); label.textContent = role === "user" ? "Du" : "Pi";
-  const content = document.createElement("div"); content.textContent = text;
+  const content = document.createElement("div");
+  if (role === "assistant") {
+    content.className = "markdown";
+    content.append(renderMarkdown(text));
+  } else content.textContent = text;
   article.append(label, content); return article;
 }
 async function update() {
@@ -66,6 +75,12 @@ $("composer").onsubmit = async (event) => {
   catch (error) { $("error").textContent = error.message; }
   finally { sending = false; }
 };
+$("prompt").addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && !event.shiftKey && !event.isComposing && event.keyCode !== 229) {
+    event.preventDefault();
+    if (!$("send").disabled) $("composer").requestSubmit();
+  }
+});
 $("new").onclick = () => { if (confirm("Neuen Chat starten? Der bisherige Chat bleibt auf dem Server gespeichert.")) action("new"); };
 $("signin").onclick = () => action("login");
 $("stop").onclick = () => action("stop");

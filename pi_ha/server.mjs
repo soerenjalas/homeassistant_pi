@@ -21,8 +21,13 @@ const config = {
 const assets = new Map(await Promise.all([
   ["/", "index.html", "text/html; charset=utf-8"],
   ["/app.js", "app.js", "text/javascript; charset=utf-8"],
+  ["/markdown.js", "markdown.js", "text/javascript; charset=utf-8"],
   ["/style.css", "style.css", "text/css; charset=utf-8"],
 ].map(async ([route, file, type]) => [route, { type, data: await readFile(new URL(`public/${file}`, import.meta.url)) }])));
+for (const [route, file] of [
+  ["/vendor/marked.js", "marked/lib/marked.esm.js"],
+  ["/vendor/purify.js", "dompurify/dist/purify.es.mjs"],
+]) assets.set(route, { type: "text/javascript; charset=utf-8", data: await readFile(new URL(`node_modules/${file}`, import.meta.url)) });
 const chats = new Map();
 async function getChat(user) {
   if (!chats.has(user)) {
