@@ -4,7 +4,7 @@ import { createMarkdownRenderer } from "./markdown.js";
 
 const renderMarkdown = createMarkdownRenderer(marked, DOMPurify);
 const $ = (id) => document.getElementById(id);
-let messagesKey = "", approvalsKey = "", sending = false;
+let messagesKey = "", approvalsKey = "", sending = false, modelsLoaded = false, selectingModel = false;
 async function api(path, body) {
   const response = await fetch(`api/${path}`, body === undefined ? { cache: "no-store" } : {
     method: "POST", headers: { "Content-Type": "application/json", "X-Pi-Request": "1" }, body: JSON.stringify(body),
@@ -30,13 +30,25 @@ function message(role, text) {
 async function update() {
   const state = await api("status");
   $("status").textContent = `${state.model} · ${state.busy ? "Arbeitet …" : state.authenticated ? "Bereit" : "Nicht angemeldet"} · ${state.mcpBackend} · ${state.mcpTools} Werkzeuge`;
+  if (!modelsLoaded) {
+    const catalog = await api("models");
+    $("model").replaceChildren(...catalog.models.map((model) => {
+      const option = document.createElement("option"); option.value = model.id; option.textContent = model.name; return option;
+    }));
+    modelsLoaded = true;
+  }
+  if (!selectingModel) $("model").value = state.model;
+  $("model").disabled = state.busy || state.login.active || !state.authenticated || sending || selectingModel;
+  $("working").hidden = !state.busy && !sending && !selectingModel;
+  $("working").classList.toggle("waiting", state.approvals.length > 0);
+  $("working-label").textContent = state.approvals.length ? "Wartet auf deine Bestätigung" : selectingModel ? "Modell wird gewechselt …" : "Pi arbeitet …";
   $("login").hidden = state.authenticated;
   $("signin").disabled = state.login.active;
   $("login-info").textContent = state.login.error || (state.login.active ? "Code bei OpenAI eingeben. Falls nötig, Gerätecode-Anmeldung in den ChatGPT-Sicherheitseinstellungen erlauben." : "");
   $("login-url").hidden = !state.login.url;
   if (state.login.url) $("login-url").href = state.login.url;
   $("login-code").textContent = state.login.code || "";
-  $("send").disabled = state.busy || !state.authenticated || sending;
+  $("send").disabled = state.busy || !state.authenticated || sending || selectingModel;
   $("new").disabled = state.busy || !state.authenticated || state.login.active;
   $("stop").hidden = !state.busy && !state.login.active;
   $("error").textContent = state.error || "";
@@ -75,6 +87,13 @@ $("composer").onsubmit = async (event) => {
   catch (error) { $("error").textContent = error.message; }
   finally { sending = false; }
 };
+$("model").addEventListener("change", async () => {
+  selectingModel = true; $("model").disabled = true; $("send").disabled = true;
+  try { await api("model", { model: $("model").value }); }
+  catch (error) { $("error").textContent = error.message; }
+  finally { selectingModel = false; }
+  await update();
+});
 $("prompt").addEventListener("keydown", (event) => {
   if (event.key === "Enter" && !event.shiftKey && !event.isComposing && event.keyCode !== 229) {
     event.preventDefault();

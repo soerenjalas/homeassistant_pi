@@ -8,7 +8,7 @@
   <script type="module" src="app.js"></script>
 </head>
 <body>
-  <header><div><strong>π <span>Home Assistant</span></strong><small id="status">Verbinde …</small></div><button id="new" type="button">Neuer Chat</button></header>
+  <header><div><strong>π <span>Home Assistant</span></strong><small id="status">Verbinde …</small></div><div class="header-actions"><label class="sr-only" for="model">OpenAI-Modell auswählen</label><select id="model" disabled title="OpenAI-Abonnement: verfügbare Modelle; Nutzungslimits hängen vom Modell ab"><option>Lade Modelle …</option></select><button id="new" type="button">Neuer Chat</button></div></header>
   <main>
     <section id="login" hidden>
       <h2>Mit OpenAI verbinden</h2>
@@ -20,9 +20,10 @@
     <div id="messages" aria-live="polite" aria-label="Chatverlauf"></div>
     <section id="approvals" aria-live="polite"></section>
     <p id="error" role="alert"></p>
-    <p id="activity" role="status"></p>
   </main>
   <footer>
+    <div id="working" role="status" hidden><span class="spinner" aria-hidden="true"></span><span id="working-label">Pi arbeitet …</span></div>
+    <p id="activity"></p>
     <form id="composer"><label class="sr-only" for="prompt">Deine Frage zu Home Assistant</label><textarea id="prompt" rows="2" maxlength="20000" placeholder="Was möchtest du zuhause erledigen?" aria-describedby="composer-help"></textarea><div><button id="send" type="submit">Senden</button><button id="stop" type="button" hidden>Stoppen</button></div></form>
     <small id="composer-help">Enter: senden · Shift+Enter: neue Zeile · Änderungen nur mit Bestätigung</small>
   </footer>

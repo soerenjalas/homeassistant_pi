@@ -66,6 +66,19 @@ test("SDK codemode reaches HA MCP; writes require approval and shell is blocked"
     const shell = await execute('text(await tools.bash({command: "echo unsafe"}));');
     assert.doesNotMatch(JSON.stringify(shell.content), /"output":"unsafe/);
     assert.match(JSON.stringify(shell.content), /not permitted|not a function|Unknown|not callable|not available|does not exist/i);
+    const nextModel = chat.listModels().find((model) => model.id !== session.model.id);
+    assert.ok(nextModel);
+    const messagesBefore = session.messages.length;
+    await chat.selectModel(nextModel.id);
+    assert.equal(chat.session, session, "model switching must preserve the conversation");
+    assert.equal(session.model.id, nextModel.id);
+    assert.equal(session.messages.length, messagesBefore);
+    await assert.rejects(chat.selectModel("not-a-real-model"), /Unknown/);
+    chat.busy = true;
+    await assert.rejects(chat.selectModel(nextModel.id), /Stop the current/);
+    chat.busy = false;
+    const restored = await new Chat(dir, chat.config).init();
+    assert.equal(restored.selectedModel, nextModel.id);
   } finally {
     chat?.session?.dispose();
     server.closeAllConnections(); await new Promise((resolve) => server.close(resolve));

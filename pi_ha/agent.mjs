@@ -1,4 +1,4 @@
-import { mkdir, chmod, appendFile } from "node:fs/promises";
+import { mkdir, chmod, appendFile, readFile, writeFile, rename } from "node:fs/promises";
 import { join } from "node:path";
 import {
   createAgentSession, createCodemodeExtension, createMcpExtension,
@@ -31,11 +31,15 @@ export class Chat {
   activity = "";
   approvals = new Approvals();
   login = { active: false };
-  constructor(dir, config) { this.dir = dir; this.config = config; }
+  constructor(dir, config) { this.dir = dir; this.config = config; this.selectedModel = config.model; }
 
   async init() {
     await mkdir(this.dir, { recursive: true, mode: 0o700 });
     await chmod(this.dir, 0o700);
+    try {
+      const saved = JSON.parse(await readFile(join(this.dir, "preferences.json"), "utf8"));
+      if (typeof saved.model === "string") this.selectedModel = saved.model;
+    } catch (error) { if (error.code !== "ENOENT") throw error; }
     this.runtime = await ModelRuntime.create({
       authPath: join(this.dir, "auth.json"), modelsPath: null,
       modelsStorePath: join(this.dir, "models-cache.json"), allowModelNetwork: true,
@@ -66,14 +70,38 @@ export class Chat {
     }).catch((error) => { this.login = { active: false, error: error.message }; });
   }
 
+  listModels() {
+    return this.runtime.getModels("openai-codex").map((model) => ({ id: model.id, name: model.name || model.id }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  async selectModel(id) {
+    if (this.busy || this.login.active) throw new Error("Stop the current request before changing models");
+    const model = this.runtime.getModel("openai-codex", id);
+    if (!model) throw Object.assign(new Error("Unknown OpenAI subscription model"), { status: 400 });
+    if (!this.runtime.hasConfiguredAuth("openai-codex")) throw new Error("Please sign in with OpenAI first");
+    this.busy = true;
+    const previous = this.session?.model;
+    try {
+      if (this.session) await this.session.setModel(model);
+      const temp = join(this.dir, "preferences.json.tmp");
+      await writeFile(temp, JSON.stringify({ model: id }) + "\n", { mode: 0o600 });
+      await rename(temp, join(this.dir, "preferences.json"));
+      this.selectedModel = id;
+    } catch (error) {
+      if (previous && this.session) await this.session.setModel(previous);
+      throw error;
+    } finally { this.busy = false; }
+  }
+
   async getSession(fresh = false) {
     if (this.session) return this.session;
     if (!this.runtime.hasConfiguredAuth("openai-codex")) throw new Error("Please sign in with OpenAI first");
-    const model = this.runtime.getModel("openai-codex", this.config.model);
-    if (!model) throw new Error(`Model openai-codex/${this.config.model} is not in the Pi catalog. No fallback model was selected.`);
+    const model = this.runtime.getModel("openai-codex", this.selectedModel);
+    if (!model) throw new Error(`Model openai-codex/${this.selectedModel} is not in the Pi catalog. No fallback model was selected.`);
     const cwd = this.dir;
     const settingsManager = SettingsManager.inMemory({
-      defaultTools: ["codemode"], defaultProvider: "openai-codex", defaultModel: this.config.model,
+      defaultTools: ["codemode"], defaultProvider: "openai-codex", defaultModel: this.selectedModel,
       cacheWarming: "off", enableAnalytics: false, enableInstallTelemetry: false,
     });
     const host = (pi) => {
@@ -163,7 +191,7 @@ export class Chat {
       finally { this.busy = false; }
     }
     return {
-      model: this.config.model, authenticated: this.runtime.hasConfiguredAuth("openai-codex"),
+      model: this.session?.model?.id ?? this.selectedModel, authenticated: this.runtime.hasConfiguredAuth("openai-codex"),
       mcpBackend: this.config.mcpBackend ?? "HA-MCP",
       mcpTools: this.session?.getAllTools().filter((tool) => tool.name.startsWith("mcp__homeassistant__")).length ?? 0,
       busy: this.busy, error: redactMcpText(this.error, this.config), login: this.login,

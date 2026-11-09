@@ -67,6 +67,7 @@ const server = createServer(async (request, response) => {
     }
     if (!["GET", "POST"].includes(request.method)) { json(response, 405, { error: "Method not allowed" }); return; }
     const chat = await getChat(user);
+    if (request.method === "GET" && path === "/api/models") { json(response, 200, { models: chat.listModels() }); return; }
     if (request.method === "GET" && path === "/api/status") { json(response, 200, await chat.status()); return; }
     if (request.method !== "POST") { json(response, 404, { error: "Not found" }); return; }
     const body = await jsonBody(request);
@@ -82,6 +83,9 @@ const server = createServer(async (request, response) => {
       await chat.newConversation();
     } else if (path === "/api/login") {
       chat.startLogin();
+    } else if (path === "/api/model") {
+      if (typeof body.model !== "string" || body.model.length > 100) { json(response, 400, { error: "Invalid model ID" }); return; }
+      await chat.selectModel(body.model);
     } else if (path === "/api/approval") {
       if (typeof body.id !== "string" || typeof body.approved !== "boolean") { json(response, 400, { error: "Invalid approval" }); return; }
       if (!chat.approvals.answer(body.id, body.approved)) { json(response, 409, { error: "Approval expired" }); return; }

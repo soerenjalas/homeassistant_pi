@@ -32,7 +32,7 @@ For installing from a Git repository instead, publish this repository without se
 ## Configuration
 
 - `allowed_user_ids`: explicit HA user IDs allowed to open and use the app. Default `[]` denies everyone. Sidebar visibility alone is not treated as authorization.
-- `model`: OpenAI Codex model ID. Default `gpt-6.1-sol`. If absent from Pi's model catalog, the app reports an error instead of silently using another model. Server acceptance/access still depends on your subscription.
+- `model`: default OpenAI Codex model ID for users without a saved choice. Default `gpt-6.1-sol`. The chat header offers Pi's OpenAI Codex model catalog; selections persist per HA user and keep the current conversation. Switching is disabled during active work. Catalog presence does not guarantee access through your subscription. Smaller models may consume allowance differently; subscription login is not per-token API billing. If a model is absent from the catalog, the app reports an error instead of silently using another model.
 
 - `mcp_url`: optional secret connection URL for the third-party [HA-MCP server](https://github.com/homeassistant-ai/ha-mcp). Empty uses the built-in MCP at `http://supervisor/core/api/mcp` with the Supervisor token. A custom URL uses secret-path authentication and **never receives the Supervisor token**. Only HTTP(S) URLs without userinfo/fragments are accepted. This field is password-masked in HA's configuration UI.
 

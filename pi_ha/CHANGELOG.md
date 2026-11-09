@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.3
+
+- OpenAI subscription model selector in the chat header; choices persist per HA user without clearing the conversation.
+- Animated working indicator beside the composer, with a separate approval-wait state and reduced-motion support.
+
 ## 0.1.2
 
 - Optional secret HA-MCP connection URL; empty keeps the original built-in MCP backend.
