@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Pi · Home Assistant</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <header><div><strong>π <span>Home Assistant</span></strong><small id="status">Verbinde …</small></div><button id="new" type="button">Neuer Chat</button></header>
+  <main>
+    <section id="login" hidden>
+      <h2>Mit OpenAI verbinden</h2>
+      <p>Verwende dein ChatGPT-Abonnement. Die Anmeldung wird nur in dieser App gespeichert.</p>
+      <button id="signin" type="button">Bei OpenAI anmelden</button>
+      <p id="login-info"></p><a id="login-url" target="_blank" rel="noopener noreferrer" hidden>Anmeldung öffnen</a>
+      <p><code id="login-code"></code></p>
+    </section>
+    <div id="messages" aria-live="polite" aria-label="Chatverlauf"></div>
+    <section id="approvals" aria-live="polite"></section>
+    <p id="error" role="alert"></p>
+    <p id="activity" role="status"></p>
+  </main>
+  <footer>
+    <form id="composer"><label class="sr-only" for="prompt">Deine Frage zu Home Assistant</label><textarea id="prompt" rows="2" maxlength="20000" placeholder="Was möchtest du zuhause erledigen?"></textarea><div><button id="send" type="submit">Senden</button><button id="stop" type="button" hidden>Stoppen</button></div></form>
+    <small>Lesen ohne Rückfrage · Änderungen nur mit Bestätigung · Keine Shell</small>
+  </footer>
+</body>
+</html>
