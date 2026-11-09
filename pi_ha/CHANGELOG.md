@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2
+
+- Optional secret HA-MCP connection URL; empty keeps the original built-in MCP backend.
+- Custom servers never receive the Supervisor token. No silent fallback or write replay.
+- Show active backend, preserve write approvals, and redact connection secrets from displayed text.
+
 ## 0.1.1
 
 - Render assistant replies as sanitized Markdown, including tables and code blocks.

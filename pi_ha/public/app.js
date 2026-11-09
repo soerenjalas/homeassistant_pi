@@ -29,7 +29,7 @@ function message(role, text) {
 }
 async function update() {
   const state = await api("status");
-  $("status").textContent = `${state.model} · ${state.busy ? "Arbeitet …" : state.authenticated ? "Bereit" : "Nicht angemeldet"} · ${state.mcpTools} HA-Werkzeuge`;
+  $("status").textContent = `${state.model} · ${state.busy ? "Arbeitet …" : state.authenticated ? "Bereit" : "Nicht angemeldet"} · ${state.mcpBackend} · ${state.mcpTools} Werkzeuge`;
   $("login").hidden = state.authenticated;
   $("signin").disabled = state.login.active;
   $("login-info").textContent = state.login.error || (state.login.active ? "Code bei OpenAI eingeben. Falls nötig, Gerätecode-Anmeldung in den ChatGPT-Sicherheitseinstellungen erlauben." : "");

@@ -1,5 +1,5 @@
 name: Pi Home Assistant
-version: "0.1.1"
+version: "0.1.2"
 slug: pi_ha
 description: Private mobile chat with Pi, OpenAI subscription login, and Home Assistant MCP
 arch:
@@ -17,8 +17,10 @@ homeassistant_api: true
 options:
   allowed_user_ids: []
   model: gpt-6.1-sol
+  mcp_url: ""
 schema:
   allowed_user_ids:
     - str
   model: str
+  mcp_url: password
 stage: experimental

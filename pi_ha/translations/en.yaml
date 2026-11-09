@@ -1,0 +1,10 @@
+configuration:
+  allowed_user_ids:
+    name: Allowed HA user IDs
+    description: Only these administrators can use Pi.
+  model:
+    name: OpenAI model
+    description: Model ID for your OpenAI subscription.
+  mcp_url:
+    name: HA-MCP server URL (optional, secret)
+    description: Paste the HA-MCP secret connection URL. Leave empty for the built-in HA MCP. Only one server is used; no automatic failover.

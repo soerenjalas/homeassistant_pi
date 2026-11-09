@@ -34,7 +34,13 @@ For installing from a Git repository instead, publish this repository without se
 - `allowed_user_ids`: explicit HA user IDs allowed to open and use the app. Default `[]` denies everyone. Sidebar visibility alone is not treated as authorization.
 - `model`: OpenAI Codex model ID. Default `gpt-6.1-sol`. If absent from Pi's model catalog, the app reports an error instead of silently using another model. Server acceptance/access still depends on your subscription.
 
-The app connects to `http://supervisor/core/api/mcp` with its Supervisor token. It needs `homeassistant_api: true`, but does **not** request general Supervisor-management privileges, host networking, Docker access, or access to HA's configuration directory.
+- `mcp_url`: optional secret connection URL for the third-party [HA-MCP server](https://github.com/homeassistant-ai/ha-mcp). Empty uses the built-in MCP at `http://supervisor/core/api/mcp` with the Supervisor token. A custom URL uses secret-path authentication and **never receives the Supervisor token**. Only HTTP(S) URLs without userinfo/fragments are accepted. This field is password-masked in HA's configuration UI.
+
+To migrate, install/start HA-MCP, enable its secret redaction, leave its tool search disabled, and paste its full secret URL into `mcp_url`. Prefer its internal app hostname or the HA LAN address on port 9583; `localhost` refers to Pi's container and will not work. Restart Pi and use **New Chat** for a clean tool context. The status line identifies the backend and connected tool count. Existing subscription credentials/history are preserved.
+
+Keep the original MCP integration enabled as a **manual fallback**. Clear `mcp_url` and restart Pi to return to it. A failed custom server never triggers automatic failover: switching permissions/tool sets silently or retrying an uncertain write on a different server is unsafe. You do not need a public tunnel or webhook proxy.
+
+The app needs `homeassistant_api: true` for built-in mode, but does **not** request general Supervisor-management privileges, host networking, Docker access, or access to HA's configuration directory.
 
 ## Security and approval behaviour
 
@@ -63,6 +69,7 @@ Closing the UI does not stop a task. Use **Stoppen** if you want cancellation. A
 - The UI polls for incremental text/status, avoiding an extra WebSocket stack. It is not a terminal or a full Pi TUI.
 - No shell, SSH, direct REST/WebSocket escape hatch, arbitrary file editing, or configuration mounts. Automation/dashboard editing is available only if HA MCP exposes suitable tools; the basic HA MCP tools may not support those operations.
 - The app does not import this repository's existing chat history or automations automatically.
+- Secret URL masking/redaction prevents routine display, not all possible disclosure: do not request Pi's own app options or logs in chat. Treat app options, backups, audit logs, and session files as sensitive.
 - No autonomous schedules, background jobs, voice interface, or multi-agent features.
 - New Chat archives locally; old chats are not deleted.
 - The pinned Pi version must be deliberately upgraded to receive upstream fixes/model support.

@@ -3,6 +3,7 @@ import { readFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { Chat } from "./agent.mjs";
 import { requireUser } from "./security.mjs";
+import { mcpConfig, redactMcpText } from "./mcp-config.mjs";
 
 process.umask(0o077);
 const options = JSON.parse(await readFile(process.env.PI_HA_OPTIONS || "/data/options.json", "utf8"));
@@ -10,13 +11,11 @@ if (!Array.isArray(options.allowed_user_ids) || options.allowed_user_ids.some((i
   throw new Error("allowed_user_ids must be a list of HA user IDs");
 }
 if (typeof options.model !== "string" || !/^[a-zA-Z0-9._-]{1,100}$/.test(options.model)) throw new Error("Invalid model ID");
-if (!process.env.SUPERVISOR_TOKEN && !process.env.PI_HA_TOKEN) throw new Error("Home Assistant token is missing");
 const dataDir = process.env.PI_HA_DATA || "/data/users";
 await mkdir(dataDir, { recursive: true, mode: 0o700 });
 const config = {
   model: options.model,
-  mcpUrl: process.env.PI_HA_MCP_URL || "http://supervisor/core/api/mcp",
-  haToken: process.env.SUPERVISOR_TOKEN || process.env.PI_HA_TOKEN,
+  ...mcpConfig(options),
 };
 const assets = new Map(await Promise.all([
   ["/", "index.html", "text/html; charset=utf-8"],
@@ -88,7 +87,7 @@ const server = createServer(async (request, response) => {
       if (!chat.approvals.answer(body.id, body.approved)) { json(response, 409, { error: "Approval expired" }); return; }
     } else { json(response, 404, { error: "Not found" }); return; }
     json(response, 200, { ok: true });
-  } catch (error) { json(response, error.status || 500, { error: error.message }); }
+  } catch (error) { json(response, error.status || 500, { error: redactMcpText(error.message, config) }); }
 });
 server.requestTimeout = 30_000;
 server.headersTimeout = 15_000;
