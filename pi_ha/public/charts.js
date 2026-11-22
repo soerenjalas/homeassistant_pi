@@ -1,4 +1,4 @@
-import * as uPlot from "./vendor/uplot.js";
+import uPlot from "./vendor/uplot.js";
 
 const PALETTE = ["#146f87", "#d8803a", "#5b8c5a", "#a0526d", "#7a6fd0", "#b8860b", "#4d7ea8", "#8a8a8a"];
 const MAX_SERIES = 8, MAX_POINTS = 4000, MAX_TEXT = 120;
@@ -34,9 +34,12 @@ export function renderChart(container, rawJson) {
     const note = document.createElement("p"); note.className = "chart-error"; note.textContent = `Chart kann nicht angezeigt werden: ${error.message}`;
     container.append(note); return;
   }
-  const xs = spec.series[0].points.map((point) => point[0]);
-  const data = [xs, ...spec.series.map((entry) => entry.points.map((point) => point[1]))];
+  const xs = [...new Set(spec.series.flatMap((entry) => entry.points.map(([x]) => x)))].sort((a, b) => a - b);
   const isTime = spec.xType === "time";
+  const data = [isTime ? xs.map((x) => x / 1000) : xs, ...spec.series.map((entry) => {
+    const values = new Map(entry.points);
+    return xs.map((x) => values.get(x) ?? null);
+  })];
   const isCategory = spec.xType === "category" && spec.labels;
   const css = getComputedStyle(document.documentElement);
   const axisColor = css.getPropertyValue("--muted").trim() || "#627184";
@@ -52,12 +55,12 @@ export function renderChart(container, rawJson) {
       {
         stroke: axisColor, grid: { stroke: lineColor, width: 1 }, ticks: { stroke: lineColor },
         label: spec.xLabel || undefined,
-        values: isCategory ? (values) => values.map((value) => spec.labels[value] ?? "") : undefined,
+        values: isCategory ? (_self, values) => values.map((value) => spec.labels[value] ?? "") : undefined,
       },
       { stroke: axisColor, grid: { stroke: lineColor, width: 1 }, ticks: { stroke: lineColor }, label: spec.yLabel || undefined, values: (self, values) => values.map((value) => Number(value).toLocaleString("de-DE")) },
     ],
     series: [
-      { label: spec.xLabel || "x", value: isTime ? (self, value) => value == null ? "" : new Date(value).toLocaleString("de-DE") : (self, value) => value == null ? "" : Number(value).toLocaleString("de-DE") },
+      { label: spec.xLabel || "x", value: isTime ? (self, value) => value == null ? "" : new Date(value * 1000).toLocaleString("de-DE") : (self, value) => value == null ? "" : Number(value).toLocaleString("de-DE") },
       ...spec.series.map((entry, index) => {
         const color = PALETTE[index % PALETTE.length];
         if (spec.kind === "bar") return { label: entry.name, stroke: color, fill: color + "55", paths: uPlot.paths.bars({ size: [0.6] }) };
@@ -68,12 +71,11 @@ export function renderChart(container, rawJson) {
     legend: { show: true },
   };
   if (isCategory) options.scales.x = { time: false };
-  container.append();
   const plot = new uPlot(options, data, container);
   const ro = new ResizeObserver(() => {
     const width = Math.max(280, Math.min(760, container.clientWidth || 640));
-    if (Math.abs(width - options.width) > 8) plot.setSize({ width, height: 260 });
+    if (Math.abs(width - plot.width) > 8) plot.setSize({ width, height: 260 });
   });
   ro.observe(container);
-  container._plotCleanup = () => ro.disconnect();
+  container._plotCleanup = () => { ro.disconnect(); plot.destroy(); };
 }

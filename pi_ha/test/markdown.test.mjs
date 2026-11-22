@@ -18,5 +18,8 @@ test("Markdown renders formatting, tables, and code without executable HTML or r
   assert.equal(links[0].getAttribute("href"), "https://example.com");
   assert.equal(links[0].getAttribute("rel"), "noopener noreferrer");
   assert.equal(links[1].hasAttribute("href"), false);
+  const chart = render('```chart\n{"version":1}\n```\n\n<p class="new-chat">Text</p>');
+  assert.equal(chart.querySelector("pre > code.language-chart").textContent.trim(), '{"version":1}');
+  assert.equal(chart.querySelector(".new-chat"), null);
   dom.window.close();
 });

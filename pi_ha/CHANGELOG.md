@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.10
+
+- Serve the missing chart module and load it on demand so plotting cannot block chat startup.
+- Fix chart rendering and request error logging.
+
 ## 0.1.9
 
 - Replace the charts stdio MCP subprocess with a codemode-exposed `make_chart` tool; no spawned server can block session setup anymore. Charts still render from `chart` blocks and need no approval.

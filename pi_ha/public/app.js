@@ -1,7 +1,6 @@
 import { marked } from "./vendor/marked.js";
 import DOMPurify from "./vendor/purify.js";
 import { createMarkdownRenderer } from "./markdown.js";
-import { renderChart } from "./charts.js";
 
 const renderMarkdown = createMarkdownRenderer(marked, DOMPurify);
 const $ = (id) => document.getElementById(id);
@@ -30,7 +29,9 @@ function message(role, text) {
     for (const code of [...content.querySelectorAll("pre > code.language-chart")]) {
       const host = document.createElement("div");
       code.parentElement.replaceWith(host);
-      renderChart(host, code.textContent);
+      void import("./charts.js").then(({ renderChart }) => {
+        if (host.isConnected) renderChart(host, code.textContent);
+      }).catch(() => { host.textContent = "Diagramm konnte nicht geladen werden."; });
     }
   } else content.textContent = text;
   article.append(label, content); return article;
@@ -71,6 +72,7 @@ async function update() {
     const nodes = state.messages.map((m) => message(m.role, m.text));
     if (state.draft) nodes.push(message("assistant", state.draft));
     if (!nodes.length) nodes.push(message("assistant", "Frag mich nach dem Zustand deines Zuhauses, Verläufen oder Gerätesteuerung. Änderungen werden dir vor der Ausführung zur Bestätigung gezeigt."));
+    for (const chart of $("messages").querySelectorAll(".chart")) chart._plotCleanup?.();
     $("messages").replaceChildren(...nodes); messagesKey = nextKey;
     if (nearBottom) window.scrollTo(0, document.documentElement.scrollHeight);
   }

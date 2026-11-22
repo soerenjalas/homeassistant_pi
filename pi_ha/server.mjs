@@ -25,6 +25,7 @@ const assets = new Map(await Promise.all([
   ["/", "index.html", "text/html; charset=utf-8"],
   ["/app.js", "app.js", "text/javascript; charset=utf-8"],
   ["/markdown.js", "markdown.js", "text/javascript; charset=utf-8"],
+  ["/charts.js", "charts.js", "text/javascript; charset=utf-8"],
   ["/style.css", "style.css", "text/css; charset=utf-8"],
 ].map(async ([route, file, type]) => [route, { type, data: await readFile(new URL(`public/${file}`, import.meta.url)) }])));
 const vendorTypes = new Map([["/vendor/uplot.css", "text/css; charset=utf-8"]]);
@@ -102,7 +103,7 @@ const server = createServer(async (request, response) => {
     } else { json(response, 404, { error: "Not found" }); return; }
     json(response, 200, { ok: true });
   } catch (error) {
-    console.error("request failed:", path, request.method, redactMcpText(error.stack || error.message, config));
+    console.error("request failed:", request.method, redactMcpText(error.message, config));
     json(response, error.status || 500, { error: redactMcpText(error.message, config) });
   }
 });
