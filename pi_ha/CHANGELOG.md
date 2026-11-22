@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.6
+
+- Optional Mistral API key adds a Mistral model group beside the OpenAI subscription. Key is runtime-only, password-masked, never returned by the API, and redacted from displayed text.
+- Model choices persist as provider/model per HA user and keep the current conversation.
+- Surface connection errors in the UI status line and app log.
+
 ## 0.1.5
 
 - Local `charts` MCP server (line, scatter, bar) with strict data validation; codemode can call it without approval.

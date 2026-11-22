@@ -38,8 +38,12 @@ async function update() {
   $("status").textContent = `${state.model} · ${state.busy ? "Arbeitet …" : state.authenticated ? "Bereit" : "Nicht angemeldet"} · ${state.mcpBackend} · ${state.mcpTools} Werkzeuge`;
   if (!modelsLoaded) {
     const catalog = await api("models");
-    $("model").replaceChildren(...catalog.models.map((model) => {
-      const option = document.createElement("option"); option.value = model.id; option.textContent = model.name; return option;
+    $("model").replaceChildren(...catalog.groups.flatMap((group) => {
+      const optgroup = document.createElement("optgroup"); optgroup.label = group.label;
+      optgroup.append(...group.models.map((model) => {
+        const option = document.createElement("option"); option.value = `${group.provider}/${model.id}`; option.textContent = model.name; return option;
+      }));
+      return [optgroup];
     }));
     modelsLoaded = true;
   }
@@ -110,7 +114,11 @@ $("new").onclick = () => { if (confirm("Neuen Chat starten? Der bisherige Chat b
 $("signin").onclick = () => action("login");
 $("stop").onclick = () => action("stop");
 async function poll() {
-  try { await update(); } catch (error) { $("error").textContent = error.message; }
+  try { await update(); }
+  catch (error) {
+    $("error").textContent = error.message;
+    if (!$("status").textContent.includes("·")) $("status").textContent = "Verbindungsfehler – siehe Meldung unten";
+  }
   setTimeout(poll, document.hidden ? 5000 : 800);
 }
 poll();

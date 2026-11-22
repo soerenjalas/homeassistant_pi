@@ -6,7 +6,7 @@ import {
   DefaultResourceLoader, ModelRuntime, SessionManager, SettingsManager,
 } from "@earendil-works/pi-coding-agent";
 import { Approvals, toolPolicy } from "./security.mjs";
-import { redactMcpText } from "./mcp-config.mjs";
+import { redactMcpText, parseModelRef } from "./mcp-config.mjs";
 
 const prompt = `You are Pi, a careful Home Assistant assistant. Answer in the user's language.
 Use only Home Assistant MCP tools through codemode. Discover the currently connected tools with searchTools and describeTool; do not assume old conversation tools are still available.
@@ -33,19 +33,21 @@ export class Chat {
   activity = "";
   approvals = new Approvals();
   login = { active: false };
-  constructor(dir, config) { this.dir = dir; this.config = config; this.selectedModel = config.model; }
+  constructor(dir, config) { this.dir = dir; this.config = config; this.selectedModel = { provider: "openai-codex", model: config.model }; }
 
   async init() {
     await mkdir(this.dir, { recursive: true, mode: 0o700 });
     await chmod(this.dir, 0o700);
-    try {
-      const saved = JSON.parse(await readFile(join(this.dir, "preferences.json"), "utf8"));
-      if (typeof saved.model === "string") this.selectedModel = saved.model;
-    } catch (error) { if (error.code !== "ENOENT") throw error; }
     this.runtime = await ModelRuntime.create({
       authPath: join(this.dir, "auth.json"), modelsPath: null,
       modelsStorePath: join(this.dir, "models-cache.json"), allowModelNetwork: true,
     });
+    try {
+      const saved = JSON.parse(await readFile(join(this.dir, "preferences.json"), "utf8"));
+      if (typeof saved.model === "string" && !saved.provider) this.selectedModel = { provider: "openai-codex", model: saved.model };
+      else if (saved.provider && saved.model && this.runtime.getModel(saved.provider, saved.model)) this.selectedModel = { provider: saved.provider, model: saved.model };
+    } catch (error) { if (error.code !== "ENOENT") throw error; }
+    if (this.config.mistralApiKey) await this.runtime.setRuntimeApiKey("mistral", this.config.mistralApiKey);
     return this;
   }
 
@@ -73,23 +75,25 @@ export class Chat {
   }
 
   listModels() {
-    return this.runtime.getModels("openai-codex").map((model) => ({ id: model.id, name: model.name || model.id }))
-      .sort((a, b) => a.name.localeCompare(b.name));
+    const groups = [{ provider: "openai-codex", label: "OpenAI (Abo)", models: this.runtime.getModels("openai-codex") }];
+    if (this.runtime.hasConfiguredAuth("mistral")) groups.push({ provider: "mistral", label: "Mistral (API-Key)", models: this.runtime.getModels("mistral") });
+    return groups.map((group) => ({ ...group, models: group.models.map((model) => ({ id: model.id, name: model.name || model.id })).sort((a, b) => a.name.localeCompare(b.name)) }));
   }
 
-  async selectModel(id) {
+  async selectModel(ref) {
     if (this.busy || this.login.active) throw new Error("Stop the current request before changing models");
-    const model = this.runtime.getModel("openai-codex", id);
-    if (!model) throw Object.assign(new Error("Unknown OpenAI subscription model"), { status: 400 });
-    if (!this.runtime.hasConfiguredAuth("openai-codex")) throw new Error("Please sign in with OpenAI first");
+    const parsed = parseModelRef(ref);
+    const model = parsed && this.runtime.getModel(parsed.provider, parsed.model);
+    if (!model) throw Object.assign(new Error("Unknown model. Check that its provider is configured."), { status: 400 });
+    if (!this.runtime.hasConfiguredAuth(model.provider)) throw new Error(`No credentials configured for ${model.provider}`);
     this.busy = true;
     const previous = this.session?.model;
     try {
       if (this.session) await this.session.setModel(model);
       const temp = join(this.dir, "preferences.json.tmp");
-      await writeFile(temp, JSON.stringify({ model: id }) + "\n", { mode: 0o600 });
+      await writeFile(temp, JSON.stringify({ provider: model.provider, model: model.id }) + "\n", { mode: 0o600 });
       await rename(temp, join(this.dir, "preferences.json"));
-      this.selectedModel = id;
+      this.selectedModel = { provider: model.provider, model: model.id };
     } catch (error) {
       if (previous && this.session) await this.session.setModel(previous);
       throw error;
@@ -99,11 +103,11 @@ export class Chat {
   async getSession(fresh = false) {
     if (this.session) return this.session;
     if (!this.runtime.hasConfiguredAuth("openai-codex")) throw new Error("Please sign in with OpenAI first");
-    const model = this.runtime.getModel("openai-codex", this.selectedModel);
-    if (!model) throw new Error(`Model openai-codex/${this.selectedModel} is not in the Pi catalog. No fallback model was selected.`);
+    const model = this.runtime.getModel(this.selectedModel.provider, this.selectedModel.model);
+    if (!model) throw new Error(`Model ${this.selectedModel.provider}/${this.selectedModel.model} is not in the Pi catalog. No fallback model was selected.`);
     const cwd = this.dir;
     const settingsManager = SettingsManager.inMemory({
-      defaultTools: ["codemode"], defaultProvider: "openai-codex", defaultModel: this.selectedModel,
+      defaultTools: ["codemode"], defaultProvider: this.selectedModel.provider, defaultModel: this.selectedModel.model,
       cacheWarming: "off", enableAnalytics: false, enableInstallTelemetry: false,
     });
     const host = (pi) => {
@@ -200,7 +204,7 @@ export class Chat {
       finally { this.busy = false; }
     }
     return {
-      model: this.session?.model?.id ?? this.selectedModel, authenticated: this.runtime.hasConfiguredAuth("openai-codex"),
+      model: this.session?.model ? `${this.session.model.provider}/${this.session.model.id}` : `${this.selectedModel.provider}/${this.selectedModel.model}`, authenticated: this.runtime.hasConfiguredAuth("openai-codex"),
       mcpBackend: this.config.mcpBackend ?? "HA-MCP",
       mcpTools: this.session?.getAllTools().filter((tool) => tool.name.startsWith("mcp__")).length ?? 0,
       busy: this.busy, error: redactMcpText(this.error, this.config), login: this.login,

@@ -11,11 +11,15 @@ if (!Array.isArray(options.allowed_user_ids) || options.allowed_user_ids.some((i
   throw new Error("allowed_user_ids must be a list of HA user IDs");
 }
 if (typeof options.model !== "string" || !/^[a-zA-Z0-9._-]{1,100}$/.test(options.model)) throw new Error("Invalid model ID");
+if (options.mistral_api_key !== "" && (typeof options.mistral_api_key !== "string" || !/^[!-~]{8,256}$/.test(options.mistral_api_key))) {
+  throw new Error("mistral_api_key must be 8–256 printable characters without whitespace");
+}
 const dataDir = process.env.PI_HA_DATA || "/data/users";
 await mkdir(dataDir, { recursive: true, mode: 0o700 });
 const config = {
   model: options.model,
   ...mcpConfig(options),
+  mistralApiKey: typeof options.mistral_api_key === "string" && options.mistral_api_key ? options.mistral_api_key : null,
 };
 const assets = new Map(await Promise.all([
   ["/", "index.html", "text/html; charset=utf-8"],
@@ -70,7 +74,7 @@ const server = createServer(async (request, response) => {
     }
     if (!["GET", "POST"].includes(request.method)) { json(response, 405, { error: "Method not allowed" }); return; }
     const chat = await getChat(user);
-    if (request.method === "GET" && path === "/api/models") { json(response, 200, { models: chat.listModels() }); return; }
+    if (request.method === "GET" && path === "/api/models") { json(response, 200, { groups: chat.listModels() }); return; }
     if (request.method === "GET" && path === "/api/status") { json(response, 200, await chat.status()); return; }
     if (request.method !== "POST") { json(response, 404, { error: "Not found" }); return; }
     const body = await jsonBody(request);
@@ -87,14 +91,17 @@ const server = createServer(async (request, response) => {
     } else if (path === "/api/login") {
       chat.startLogin();
     } else if (path === "/api/model") {
-      if (typeof body.model !== "string" || body.model.length > 100) { json(response, 400, { error: "Invalid model ID" }); return; }
+      if (typeof body.model !== "string" || body.model.length > 200) { json(response, 400, { error: "Invalid model" }); return; }
       await chat.selectModel(body.model);
     } else if (path === "/api/approval") {
       if (typeof body.id !== "string" || typeof body.approved !== "boolean") { json(response, 400, { error: "Invalid approval" }); return; }
       if (!chat.approvals.answer(body.id, body.approved)) { json(response, 409, { error: "Approval expired" }); return; }
     } else { json(response, 404, { error: "Not found" }); return; }
     json(response, 200, { ok: true });
-  } catch (error) { json(response, error.status || 500, { error: redactMcpText(error.message, config) }); }
+  } catch (error) {
+    console.error("request failed:", path, request.method, redactMcpText(error.stack || error.message, config));
+    json(response, error.status || 500, { error: redactMcpText(error.message, config) });
+  }
 });
 server.requestTimeout = 30_000;
 server.headersTimeout = 15_000;

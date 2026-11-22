@@ -19,9 +19,18 @@ export function mcpConfig(options, env = process.env) {
   };
 }
 
+export function parseModelRef(value) {
+  if (typeof value !== "string") return null;
+  const index = value.indexOf("/");
+  if (index <= 0 || index === value.length - 1) return null;
+  const provider = value.slice(0, index), model = value.slice(index + 1);
+  if (!/^[a-z0-9][a-z0-9._-]{0,63}$/i.test(provider) || !/^[a-zA-Z0-9._:-]{1,100}$/.test(model)) return null;
+  return { provider, model };
+}
+
 export function redactMcpText(text, config) {
   let result = String(text ?? "");
-  const secrets = [config.mcpUrl, config.mcpHeaders?.Authorization];
+  const secrets = [config.mcpUrl, config.mcpHeaders?.Authorization, config.mistralApiKey];
   if (config.mcpBackend === "HA-MCP") {
     const url = new URL(config.mcpUrl);
     if (url.pathname !== "/") secrets.push(url.pathname);

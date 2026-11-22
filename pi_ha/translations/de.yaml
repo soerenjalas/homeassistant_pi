@@ -5,6 +5,9 @@ configuration:
   model:
     name: OpenAI-Modell
     description: Modell-ID für dein OpenAI-Abonnement.
+  mistral_api_key:
+    name: Mistral-API-Key (optional)
+    description: Aktiviert Mistral-Modelle in der Auswahl. In den App-Optionen gespeichert; wie ein Passwort behandeln. Leer lassen für nur OpenAI.
   mcp_url:
     name: HA-MCP-Server-URL (optional, geheim)
     description: Geheime Verbindungs-URL aus HA-MCP einfügen. Leer lassen für das integrierte HA-MCP. Nur ein Server ist aktiv; kein automatischer Wechsel bei Fehlern.
