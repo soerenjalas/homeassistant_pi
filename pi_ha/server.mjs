@@ -37,7 +37,10 @@ for (const [route, file] of [
 const chats = new Map();
 async function getChat(user) {
   if (!chats.has(user)) {
-    const promise = new Chat(join(dataDir, user), config).init().catch((error) => { chats.delete(user); throw error; });
+    const promise = Promise.race([
+      new Chat(join(dataDir, user), config).init(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("App-Initialisierung dauert über 15 s")), 15000)),
+    ]).catch((error) => { chats.delete(user); throw error; });
     chats.set(user, promise);
   }
   return chats.get(user);

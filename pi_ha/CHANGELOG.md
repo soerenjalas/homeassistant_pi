@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.8
+
+- 20 s client-side API timeout, so the UI always shows an error instead of hanging on “Verbinde …”.
+- 15 s server-side limit for per-user app initialization.
+
 ## 0.1.7
 
 - 15 s timeout per MCP server and a hard init timeout with a visible German error, so an unreachable HA-MCP URL can no longer freeze the UI.

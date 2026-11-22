@@ -7,8 +7,10 @@ const renderMarkdown = createMarkdownRenderer(marked, DOMPurify);
 const $ = (id) => document.getElementById(id);
 let messagesKey = "", approvalsKey = "", sending = false, modelsLoaded = false, selectingModel = false;
 async function api(path, body) {
-  const response = await fetch(`api/${path}`, body === undefined ? { cache: "no-store" } : {
-    method: "POST", headers: { "Content-Type": "application/json", "X-Pi-Request": "1" }, body: JSON.stringify(body),
+  const response = await fetch(`api/${path}`, {
+    cache: "no-store", signal: AbortSignal.timeout(20000), ...(body === undefined ? {} : {
+      method: "POST", headers: { "Content-Type": "application/json", "X-Pi-Request": "1" }, body: JSON.stringify(body),
+    }),
   });
   const result = await response.json();
   if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
