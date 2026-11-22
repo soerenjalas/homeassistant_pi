@@ -30,7 +30,10 @@ function message(role, text) {
       const host = document.createElement("div");
       code.parentElement.replaceWith(host);
       void import("./charts.js").then(({ renderChart }) => {
-        if (host.isConnected) renderChart(host, code.textContent);
+        if (!host.isConnected) return;
+        const follow = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 150;
+        renderChart(host, code.textContent);
+        if (follow) window.scrollTo(0, document.documentElement.scrollHeight);
       }).catch(() => { host.textContent = "Diagramm konnte nicht geladen werden."; });
     }
   } else content.textContent = text;
@@ -125,4 +128,8 @@ async function poll() {
   }
   setTimeout(poll, document.hidden ? 5000 : 800);
 }
+const footer = document.querySelector("footer");
+new ResizeObserver(() => {
+  document.documentElement.style.setProperty("--composer-height", `${footer.offsetHeight}px`);
+}).observe(footer);
 poll();

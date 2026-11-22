@@ -45,8 +45,8 @@ export function validateChart(args) {
     for (const point of entry.points) {
       if (!Array.isArray(point) || point.length !== 2) return fail(`series[${index}] points must be [x, y] pairs`);
       const parsedX = pointX(point[0]);
-      const y = typeof point[1] === "number" && Number.isFinite(point[1]) ? point[1] : null;
-      if (!parsedX || y === null) return fail(`series[${index}] has a non-numeric point`);
+      const y = point[1];
+      if (!parsedX || (y !== null && !Number.isFinite(y))) return fail(`series[${index}] has an invalid point`);
       if (!parsedX.numeric) {
         allNumeric = false;
         if (!categoryIndex.has(parsedX.x)) categoryIndex.set(parsedX.x, categoryIndex.size);
@@ -85,7 +85,7 @@ export const chartToolSchema = {
         type: "object", required: ["points"],
         properties: {
           name: { type: "string" },
-          points: { type: "array", minItems: 1, maxItems: MAX_POINTS, items: { type: "array", items: [{}, { type: "number" }], minItems: 2, maxItems: 2 } },
+          points: { type: "array", minItems: 1, maxItems: MAX_POINTS, items: { type: "array", items: [{}, { type: ["number", "null"] }], minItems: 2, maxItems: 2 } },
         },
       },
     },

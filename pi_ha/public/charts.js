@@ -18,7 +18,7 @@ function validate(spec) {
     if (total > MAX_POINTS) fail("Zu viele Datenpunkte");
     const points = [];
     for (const point of entry.points) {
-      if (!Array.isArray(point) || point.length !== 2 || !Number.isFinite(point[0]) || !Number.isFinite(point[1])) fail("Punkt ist nicht numerisch");
+      if (!Array.isArray(point) || point.length !== 2 || !Number.isFinite(point[0]) || (point[1] !== null && !Number.isFinite(point[1]))) fail("Punkt ist nicht numerisch");
       points.push(point);
     }
     series.push({ name: text(entry.name, 80) || `Serie ${series.length + 1}`, points });
@@ -38,22 +38,27 @@ export function renderChart(container, rawJson) {
   const isTime = spec.xType === "time";
   const data = [isTime ? xs.map((x) => x / 1000) : xs, ...spec.series.map((entry) => {
     const values = new Map(entry.points);
-    return xs.map((x) => values.get(x) ?? null);
+    // uPlot joins across undefined (another series sampled) but breaks at explicit nulls.
+    return xs.map((x) => values.get(x));
   })];
   const isCategory = spec.xType === "category" && spec.labels;
   const css = getComputedStyle(document.documentElement);
   const axisColor = css.getPropertyValue("--muted").trim() || "#627184";
   const lineColor = css.getPropertyValue("--line").trim() || "#dde4ec";
+  const size = () => {
+    const style = getComputedStyle(container);
+    const width = Math.max(1, Math.floor(container.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)));
+    return { width, height: width < 480 ? 240 : 300 };
+  };
   const options = {
-    width: Math.max(280, Math.min(760, container.clientWidth || 640)),
-    height: 260,
+    ...size(),
     title: spec.title || undefined,
     padding: [8, 8, 0, 0],
     cursor: { show: true },
     scales: { x: { time: isTime }, y: {} },
     axes: [
       {
-        stroke: axisColor, grid: { stroke: lineColor, width: 1 }, ticks: { stroke: lineColor },
+        stroke: axisColor, grid: { show: false }, ticks: { stroke: lineColor }, space: 88,
         label: spec.xLabel || undefined,
         values: isCategory ? (_self, values) => values.map((value) => spec.labels[value] ?? "") : undefined,
       },
@@ -65,7 +70,7 @@ export function renderChart(container, rawJson) {
         const color = PALETTE[index % PALETTE.length];
         if (spec.kind === "bar") return { label: entry.name, stroke: color, fill: color + "55", paths: uPlot.paths.bars({ size: [0.6] }) };
         if (spec.kind === "scatter") return { label: entry.name, stroke: color, width: 0, points: { show: true, size: 6, stroke: color, fill: css.getPropertyValue("--card").trim() || "#fff" } };
-        return { label: entry.name, stroke: color, width: 2, points: { show: false } };
+        return { label: entry.name, stroke: color, width: 2.5, points: { show: entry.points.filter(([, y]) => y !== null).length < 3, size: 6 } };
       }),
     ],
     legend: { show: true },
@@ -73,8 +78,8 @@ export function renderChart(container, rawJson) {
   if (isCategory) options.scales.x = { time: false };
   const plot = new uPlot(options, data, container);
   const ro = new ResizeObserver(() => {
-    const width = Math.max(280, Math.min(760, container.clientWidth || 640));
-    if (Math.abs(width - plot.width) > 8) plot.setSize({ width, height: 260 });
+    const next = size();
+    if (next.width && next.width !== plot.width) plot.setSize(next);
   });
   ro.observe(container);
   container._plotCleanup = () => { ro.disconnect(); plot.destroy(); };

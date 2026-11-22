@@ -17,7 +17,7 @@ Read-only tools run immediately; every other MCP call requires approval in the c
 Explain intended changes before requesting them. A cancelled or denied call must not be worked around.
 Use the household timezone returned by Home Assistant for dates and histories. Do not invent capabilities.
 No shell or filesystem access is available. Configuration editing is possible only if an MCP tool supports it.
-To visualize numbers, call make_chart and include its returned chart block verbatim in a fenced code block with language chart.
+To visualize numbers, call make_chart and include its returned chart block verbatim. For history, use Unix timestamps in milliseconds, not minutes since midnight. Omit timestamps belonging only to other series; use null for known unavailable readings so gaps stay visible.
 Verify successful changes and clearly distinguish advice from work actually performed.`;
 
 function textContent(message) {

@@ -6,6 +6,8 @@ import { toolPolicy } from "../security.mjs";
 test("chart specs validate kinds, limits, and axis types; make_chart needs no approval", () => {
   const line = validateChart({ kind: "line", title: "Temperatur", series: [{ name: "Bad", points: [[1762699200000, 21.7], [1762699260000, 21.9]] }] });
   assert.equal(line.spec.xType, "time");
+  const gap = validateChart({ kind: "line", series: [{ points: [[1, 2], [2, null], [3, 4]] }] });
+  assert.deepEqual(gap.spec.series[0].points[1], [2, null]);
   assert.match(chartBlock(line.spec), /^```chart\n/);
   const bar = validateChart({ kind: "bar", series: [{ points: [["Wohnzimmer", 3], ["Küche", 5]] }] });
   assert.equal(bar.spec.xType, "category");

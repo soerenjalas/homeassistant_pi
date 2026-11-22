@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.11
+
+- Connect independently sampled series without hiding explicitly missing readings.
+- Prefer real timestamps for history plots, improve mobile chart layout, and keep charts clear of the composer.
+
 ## 0.1.10
 
 - Serve the missing chart module and load it on demand so plotting cannot block chat startup.
