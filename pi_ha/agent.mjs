@@ -1,12 +1,12 @@
 import { mkdir, chmod, appendFile, readFile, writeFile, rename } from "node:fs/promises";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import {
   createAgentSession, createCodemodeExtension, createMcpExtension,
   DefaultResourceLoader, ModelRuntime, SessionManager, SettingsManager,
 } from "@earendil-works/pi-coding-agent";
 import { Approvals, toolPolicy } from "./security.mjs";
 import { redactMcpText, parseModelRef } from "./mcp-config.mjs";
+import { validateChart, chartBlock, chartToolSchema } from "./chart-spec.mjs";
 
 const prompt = `You are Pi, a careful Home Assistant assistant. Answer in the user's language.
 Use only Home Assistant MCP tools through codemode. Discover the currently connected tools with searchTools and describeTool; do not assume old conversation tools are still available.
@@ -17,7 +17,7 @@ Read-only tools run immediately; every other MCP call requires approval in the c
 Explain intended changes before requesting them. A cancelled or denied call must not be worked around.
 Use the household timezone returned by Home Assistant for dates and histories. Do not invent capabilities.
 No shell or filesystem access is available. Configuration editing is possible only if an MCP tool supports it.
-To visualize numbers, call the local charts MCP server and include its returned chart block verbatim in a fenced code block with language chart.
+To visualize numbers, call make_chart and include its returned chart block verbatim in a fenced code block with language chart.
 Verify successful changes and clearly distinguish advice from work actually performed.`;
 
 function textContent(message) {
@@ -118,13 +118,18 @@ export class Chat {
         timeout: 15,
         description: "The user's Home Assistant: inspect states/history and operate devices with approval.",
       });
-      pi.registerMcpServer("charts", {
-        command: process.execPath,
-        args: [fileURLToPath(new URL("./plot-mcp.mjs", import.meta.url))],
-        cwd: this.dir,
+      pi.registerTool({
+        name: "make_chart",
+        label: "Chart",
+        description: "Create a validated line, scatter, or bar chart. Returns a chart JSON block to include verbatim in a fenced code block with language chart.",
         exposure: "codemode",
-        timeout: 15,
-        description: "Local chart builder: returns a validated chart JSON block for line, scatter, and bar charts. No approval needed.",
+        annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+        parameters: chartToolSchema,
+        async execute(_toolCallId, args) {
+          const result = validateChart(args);
+          if (result.error) return { content: [{ type: "text", text: result.error }], details: { error: result.error }, isError: true };
+          return { content: [{ type: "text", text: chartBlock(result.spec) }], details: { chart: result.spec } };
+        },
       });
       pi.on("tool_call", async (event, ctx) => {
         const hints = pi.getAllTools().find((tool) => tool.name === event.toolName)?.annotations;

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.9
+
+- Replace the charts stdio MCP subprocess with a codemode-exposed `make_chart` tool; no spawned server can block session setup anymore. Charts still render from `chart` blocks and need no approval.
+
 ## 0.1.8
 
 - 20 s client-side API timeout, so the UI always shows an error instead of hanging on “Verbinde …”.
