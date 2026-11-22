@@ -3,6 +3,6 @@ WORKDIR /app
 ENV NODE_ENV=production
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
-COPY server.mjs agent.mjs security.mjs mcp-config.mjs ./
+COPY server.mjs agent.mjs security.mjs mcp-config.mjs plot-mcp.mjs ./
 COPY public ./public
 CMD ["node", "server.mjs"]

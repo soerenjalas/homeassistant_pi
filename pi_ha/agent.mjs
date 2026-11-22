@@ -1,5 +1,6 @@
 import { mkdir, chmod, appendFile, readFile, writeFile, rename } from "node:fs/promises";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   createAgentSession, createCodemodeExtension, createMcpExtension,
   DefaultResourceLoader, ModelRuntime, SessionManager, SettingsManager,
@@ -16,6 +17,7 @@ Read-only tools run immediately; every other MCP call requires approval in the c
 Explain intended changes before requesting them. A cancelled or denied call must not be worked around.
 Use the household timezone returned by Home Assistant for dates and histories. Do not invent capabilities.
 No shell or filesystem access is available. Configuration editing is possible only if an MCP tool supports it.
+To visualize numbers, call the local charts MCP server and include its returned chart block verbatim in a fenced code block with language chart.
 Verify successful changes and clearly distinguish advice from work actually performed.`;
 
 function textContent(message) {
@@ -111,6 +113,13 @@ export class Chat {
         exposure: "codemode",
         description: "The user's Home Assistant: inspect states/history and operate devices with approval.",
       });
+      pi.registerMcpServer("charts", {
+        command: process.execPath,
+        args: [fileURLToPath(new URL("./plot-mcp.mjs", import.meta.url))],
+        cwd: this.dir,
+        exposure: "codemode",
+        description: "Local chart builder: returns a validated chart JSON block for line, scatter, and bar charts. No approval needed.",
+      });
       pi.on("tool_call", async (event, ctx) => {
         const hints = pi.getAllTools().find((tool) => tool.name === event.toolName)?.annotations;
         const policy = toolPolicy(event.toolName, hints);
@@ -193,7 +202,7 @@ export class Chat {
     return {
       model: this.session?.model?.id ?? this.selectedModel, authenticated: this.runtime.hasConfiguredAuth("openai-codex"),
       mcpBackend: this.config.mcpBackend ?? "HA-MCP",
-      mcpTools: this.session?.getAllTools().filter((tool) => tool.name.startsWith("mcp__homeassistant__")).length ?? 0,
+      mcpTools: this.session?.getAllTools().filter((tool) => tool.name.startsWith("mcp__")).length ?? 0,
       busy: this.busy, error: redactMcpText(this.error, this.config), login: this.login,
       draft: redactMcpText(this.draft, this.config), activity: this.activity,
       approvals: this.approvals.list().map((item) => ({ ...item,

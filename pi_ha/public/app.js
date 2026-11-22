@@ -1,6 +1,7 @@
 import { marked } from "./vendor/marked.js";
 import DOMPurify from "./vendor/purify.js";
 import { createMarkdownRenderer } from "./markdown.js";
+import { renderChart } from "./charts.js";
 
 const renderMarkdown = createMarkdownRenderer(marked, DOMPurify);
 const $ = (id) => document.getElementById(id);
@@ -24,6 +25,11 @@ function message(role, text) {
   if (role === "assistant") {
     content.className = "markdown";
     content.append(renderMarkdown(text));
+    for (const code of [...content.querySelectorAll("pre > code.language-chart")]) {
+      const host = document.createElement("div");
+      code.parentElement.replaceWith(host);
+      renderChart(host, code.textContent);
+    }
   } else content.textContent = text;
   article.append(label, content); return article;
 }

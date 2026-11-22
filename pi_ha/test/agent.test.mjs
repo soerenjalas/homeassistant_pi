@@ -80,6 +80,7 @@ test("SDK codemode reaches HA MCP; writes require approval and shell is blocked"
     const restored = await new Chat(dir, chat.config).init();
     assert.equal(restored.selectedModel, nextModel.id);
   } finally {
+    if (chat?.session) await chat.session.extensionRunner.emit({ type: "session_shutdown", reason: "quit" });
     chat?.session?.dispose();
     server.closeAllConnections(); await new Promise((resolve) => server.close(resolve));
     await rm(dir, { recursive: true, force: true });

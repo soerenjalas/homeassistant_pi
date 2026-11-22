@@ -12,7 +12,7 @@ export function requireUser(request, allowedUserIds) {
 }
 
 export function toolPolicy(name, annotations) {
-  if (name === "codemode") return "allow";
+  if (name === "codemode" || name.startsWith("mcp__charts__")) return "allow";
   if (!name.startsWith("mcp__homeassistant__")) return "deny";
   return annotations?.readOnlyHint === true ? "allow" : "approve";
 }

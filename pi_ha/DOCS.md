@@ -71,6 +71,7 @@ Closing the UI does not stop a task. Use **Stoppen** if you want cancellation. A
 - The app does not import this repository's existing chat history or automations automatically.
 - Secret URL masking/redaction prevents routine display, not all possible disclosure: do not request Pi's own app options or logs in chat. Treat app options, backups, audit logs, and session files as sensitive.
 - No autonomous schedules, background jobs, voice interface, or multi-agent features.
+- Plotting is local-only: a bundled stdio MCP server validates data and returns a `chart` JSON block rendered by vendored uPlot. It supports line, scatter, and bar charts, max 8 series / 4000 points, and never needs approval because it changes no Home Assistant state. Chart data still reaches OpenAI as part of the prompt.
 - New Chat archives locally; old chats are not deleted.
 - The pinned Pi version must be deliberately upgraded to receive upstream fixes/model support.
 

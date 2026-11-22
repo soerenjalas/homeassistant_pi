@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.5
+
+- Local `charts` MCP server (line, scatter, bar) with strict data validation; codemode can call it without approval.
+- Chat renders validated `chart` Markdown blocks with vendored uPlot, including time and category axes and dark-mode colors.
+
 ## 0.1.4
 
 - Move the model picker into the fixed composer toolbar, keeping it accessible while scrolling.
