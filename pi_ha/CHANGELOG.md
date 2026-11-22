@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.7
+
+- 15 s timeout per MCP server and a hard init timeout with a visible German error, so an unreachable HA-MCP URL can no longer freeze the UI.
+- Stage logging in the app log for session/MCP binding.
+
 ## 0.1.6
 
 - Optional Mistral API key adds a Mistral model group beside the OpenAI subscription. Key is runtime-only, password-masked, never returned by the API, and redacted from displayed text.

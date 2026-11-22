@@ -115,6 +115,7 @@ export class Chat {
         url: this.config.mcpUrl,
         headers: this.config.mcpHeaders ?? {},
         exposure: "codemode",
+        timeout: 15,
         description: "The user's Home Assistant: inspect states/history and operate devices with approval.",
       });
       pi.registerMcpServer("charts", {
@@ -122,6 +123,7 @@ export class Chat {
         args: [fileURLToPath(new URL("./plot-mcp.mjs", import.meta.url))],
         cwd: this.dir,
         exposure: "codemode",
+        timeout: 15,
         description: "Local chart builder: returns a validated chart JSON block for line, scatter, and bar charts. No approval needed.",
       });
       pi.on("tool_call", async (event, ctx) => {
@@ -150,8 +152,10 @@ export class Chat {
       noTools: "builtin", settingsManager, resourceLoader,
       sessionManager: fresh ? SessionManager.create(cwd, sessionDir) : SessionManager.continueRecent(cwd, sessionDir),
     });
+    console.error("pi: session created, binding extensions");
     try {
       await session.bindExtensions({});
+      console.error("pi: extensions bound, mcp tools:", session.getAllTools().filter((tool) => tool.name.startsWith("mcp__")).length);
     } catch (error) { session.dispose(); throw error; }
     session.subscribe((event) => {
       if (event.type === "message_start" && event.message.role === "assistant") this.draft = "";
@@ -200,7 +204,12 @@ export class Chat {
     // Restore history after app restart, without sending a prompt to the model.
     if (!this.session && !this.busy && this.runtime.hasConfiguredAuth("openai-codex")) {
       this.busy = true;
-      try { await this.getSession(); } catch (error) { this.error = error.message; }
+      try {
+        await Promise.race([
+          this.getSession(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("Initialisierung dauert über 15 s – prüfe die MCP-URL (kein localhost/0.0.0.0, HA-LAN-IP oder App-Hostname verwenden)")), 15000)),
+        ]);
+      } catch (error) { this.error = error.message; console.error("pi: status init failed:", redactMcpText(error.stack || error.message, this.config)); }
       finally { this.busy = false; }
     }
     return {
